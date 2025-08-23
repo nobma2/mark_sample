@@ -9,8 +9,13 @@ MODEL = os.getenv("MODEL_NAME", "gemini-1.5-flash")   # 安定させたいなら
 
 # ==== プロンプト ====
 PROMPT_DEFAULT = (
-    "建物外観を判定し、label/confidence/reason の3項目のみを返してください。"
-    "説明・コードブロックは禁止。"
+    "建物外観を判定し、以下のJSONのみを返してください。"
+    "コードブロックや説明は禁止。"
+    "{"
+    "\"label\": \"normal\" または \"abnormal\","
+    "\"confidence\": 数値 (0.0〜1.0),"
+    "\"reason\": \"40文字以内の日本語の根拠\""
+    "}"
 )
 
 # ==== FastAPI アプリ ====

@@ -9,10 +9,15 @@ MODEL = os.getenv("MODEL_NAME", "gemini-1.5-flash")
 
 # --- プロンプトのデフォルト（必要に応じて短く変更可） ---
 PROMPT_DEFAULT = (
-    "あなたは建物外観の安全点検AIです。"
-    "次のJSONのみ返してください："
-    "{\"label\":\"normal|abnormal\",\"confidence\":0.0-1.0,\"reason\":\"日本語40文字以内\"}"
+    "あなたは建物外観の安全点検AIです。\n"
+    "入力画像を確認して、以下のJSON「のみ」を返してください。文章や説明は不要です。\n"
+    "{\n"
+    "  \"label\": \"normal\" または \"abnormal\",\n"
+    "  \"confidence\": 数値 (0.0〜1.0),\n"
+    "  \"reason\": \"40文字以内の日本語の根拠\"\n"
+    "}"
 )
+
 
 # --- FastAPI アプリ本体 ---
 app = FastAPI(title="Gemini Image Inspector API", version="1.0.0")

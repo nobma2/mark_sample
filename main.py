@@ -39,13 +39,13 @@ async def call_gemini(image_bytes: bytes, mime: str, prompt: str) -> dict:
                 "type": "object",
                 "properties": {
                     "label":      {"type": "string", "enum": ["normal", "abnormal"]},
-                    "confidence": {"type": "number", "minimum": 0.0, "maximum": 1.0},
-                    "reason":     {"type": "string", "maxLength": 40}
+                    "confidence": {"type": "number"},
+                    "reason":     {"type": "string"}
                 },
-                "required": ["label", "confidence", "reason"],
-                "additionalProperties": False
+                "required": ["label", "confidence", "reason"]
             }
         },
+        # safetySettings は任意。まずは外してもOK
         "safetySettings": [
             {"category":"HARM_CATEGORY_HATE_SPEECH","threshold":"BLOCK_NONE"},
             {"category":"HARM_CATEGORY_HARASSMENT","threshold":"BLOCK_NONE"},
@@ -64,6 +64,7 @@ async def call_gemini(image_bytes: bytes, mime: str, prompt: str) -> dict:
         r = await client.post(url, json=body)
         r.raise_for_status()
         return r.json()
+
 
 # ---------- 応答パース（複数parts結合＋救済） ----------
 def parse_response(j: dict):

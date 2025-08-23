@@ -9,15 +9,8 @@ GEMINI_API_KEY = os.environ["GOOGLE_API_KEY"]          # Secret Manager を環�
 MODEL = os.getenv("MODEL_NAME", "gemini-1.5-flash")
 
 # ==== プロンプト（厳格JSON指定）====
-PROMPT_DEFAULT = (
-    "あなたは建物外観の安全点検AIです。\n"
-    "以下のJSON『のみ』を返してください。コードブロックや説明は一切禁止です。\n"
-    "{"
-    "\"label\":\"normal\" または \"abnormal\","
-    "\"confidence\": 数値(0.0〜1.0),"
-    "\"reason\":\"40文字以内の日本語の根拠\""
-    "}"
-)
+PROMPT_DEFAULT = "建物外観を判定し、label/confidence/reason の3項目のみを返してください。説明・コードブロック禁止。"
+
 
 # ==== FastAPI アプリ ====
 app = FastAPI(title="Gemini Image Inspector API", version="1.1.0")
@@ -31,15 +24,25 @@ app.add_middleware(
 
 # ---------- Gemini 呼び出し ----------
 async def call_gemini(image_bytes: bytes, mime: str, prompt: str) -> dict:
-    """Generative Language API を叩いて応答JSONを返す"""
     b64 = base64.b64encode(image_bytes).decode("ascii")
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={GEMINI_API_KEY}"
+
     body = {
-        # JSONだけ返させる／安定化
         "generationConfig": {
-            "temperature": 0.2,
+            "temperature": 0.0,
             "topP": 0.8,
-            "response_mime_type": "application/json"
+            "response_mime_type": "application/json",
+            # ★ これで出力を強制
+            "response_schema": {
+                "type": "object",
+                "properties": {
+                    "label": { "type": "string", "enum": ["normal", "abnormal"] },
+                    "confidence": { "type": "number" },
+                    "reason": { "type": "string", "maxLength": 40 }
+                },
+                "required": ["label", "confidence", "reason"],
+                "additionalProperties": False
+            }
         },
         "contents": [{
             "parts": [
@@ -48,10 +51,12 @@ async def call_gemini(image_bytes: bytes, mime: str, prompt: str) -> dict:
             ]
         }]
     }
+
     async with httpx.AsyncClient(timeout=30.0) as client:
         r = await client.post(url, json=body)
         r.raise_for_status()
         return r.json()
+
 
 # ---------- 応答パース（頑健化） ----------
 def parse_response(j: dict):
